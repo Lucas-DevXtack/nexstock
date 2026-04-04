@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: nexstock-api
+    env: docker
+    plan: free
+    dockerfilePath: ./apps/api/Dockerfile
+    autoDeploy: true

@@ -1,0 +1,72 @@
+import { Request, Response } from 'express';
+import { ok } from '../../shared/http/response.js';
+import { handleControllerError } from '../../shared/http/controller-error.js';
+import { createTenantSchema, renameTenantSchema } from '../../shared/validation/tenant.schemas.js';
+import { archiveTenant, closeTenant, createTenant, getTenantById, getTenantPolicy, listTenantsForUser, reactivateTenant, renameTenant } from './tenants.service.js';
+
+export async function postTenant(req: Request, res: Response) {
+  try {
+    const { name } = createTenantSchema.parse(req.body || {});
+    const t = await createTenant(req.userId!, name);
+    return ok(res, t, 201);
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.postTenant');
+  }
+}
+
+export async function getTenantMe(req: Request, res: Response) {
+  try {
+    return ok(res, await getTenantById(req.tenantId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.getTenantMe');
+  }
+}
+
+export async function getMyTenants(req: Request, res: Response) {
+  try {
+    return ok(res, await listTenantsForUser(req.userId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.getMyTenants');
+  }
+}
+
+export async function patchTenantName(req: Request, res: Response) {
+  try {
+    const { name } = renameTenantSchema.parse(req.body || {});
+    return ok(res, await renameTenant(req.params.id, req.userId!, name));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.patchTenantName');
+  }
+}
+
+export async function patchTenantArchive(req: Request, res: Response) {
+  try {
+    return ok(res, await archiveTenant(req.params.id, req.userId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.patchTenantArchive');
+  }
+}
+
+export async function patchTenantReactivate(req: Request, res: Response) {
+  try {
+    return ok(res, await reactivateTenant(req.params.id, req.userId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.patchTenantReactivate');
+  }
+}
+
+export async function patchTenantClose(req: Request, res: Response) {
+  try {
+    return ok(res, await closeTenant(req.params.id, req.userId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.patchTenantClose');
+  }
+}
+
+export async function getTenantPermissions(req: Request, res: Response) {
+  try {
+    return ok(res, await getTenantPolicy(req.params.id, req.userId!));
+  } catch (e: any) {
+    return handleControllerError(res, e, 'tenants.getTenantPermissions');
+  }
+}

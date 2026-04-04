@@ -1,0 +1,566 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum MoveType {
+  IN
+  OUT
+  ADJUST
+}
+
+enum MoveReason {
+  SALE
+  ADJUST
+  LOSS
+  TRANSFER
+  OTHER
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}
+
+enum MemberRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+enum TenantStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum BillingProvider {
+  MERCADO_PAGO
+}
+
+enum BillingStatus {
+  INACTIVE
+  PENDING
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTH
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELED
+  REFUNDED
+  CHARGED_BACK
+  EXPIRED
+}
+
+enum UnitBaseType {
+  MASS
+  VOLUME
+  COUNT
+  PACK
+}
+
+enum NotificationType {
+  LOW_STOCK
+}
+
+enum PermissionKey {
+  STOCK_READ
+  STOCK_WRITE
+  FINANCE_READ
+  FINANCE_WRITE
+  REPORTS_READ
+  REPORTS_EXPORT
+  TEAM_READ
+  TEAM_INVITE
+  SETTINGS_READ
+  SETTINGS_WRITE
+  AUDIT_READ
+}
+
+model User {
+  id          String         @id @default(uuid())
+  name        String
+  email       String         @unique
+  password    String
+  avatarUrl   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  memberships TenantMember[]
+  invites     TenantInvite[]
+
+  createdStockMoves StockMove[] @relation("UserStockMoves")
+
+  auditLogs AuditLog[]
+
+  memberPermissions MemberPermission[]
+
+  refreshTokens RefreshToken[]
+
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  plan      Plan         @default(FREE)
+  status    TenantStatus @default(ACTIVE)
+  archivedAt DateTime?
+  closedAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile                TenantProfile?
+  settings               TenantSettings?
+  members                TenantMember[]
+  products               Product[]
+  productCategories      ProductCategory[]
+  moves                  StockMove[]
+  categories             Category[]
+  transactions           Transaction[]
+  invites                TenantInvite[]
+  // Legacy Stripe fields kept for compatibility/migration history
+  stripeCustomerId       String?           @unique
+  stripeSubscriptionId   String?           @unique
+  stripePriceId          String?
+  stripeStatus           String?
+  stripeCurrentPeriodEnd DateTime?
+
+  billingProvider        BillingProvider?
+  billingCustomerId      String?           @unique
+  billingSubscriptionId  String?           @unique
+  billingExternalRef     String?           @unique
+  billingStatus          BillingStatus     @default(INACTIVE)
+  billingInterval        BillingInterval?
+  billingCheckoutUrl     String?
+  billingCurrentPeriodEnd DateTime?
+  billingTrialEndsAt     DateTime?
+  billingTrialUsedAt     DateTime?
+  billingLastEventAt     DateTime?
+
+  subscriptions BillingSubscription[]
+  payments      BillingPayment[]
+  webhookEvents BillingWebhookEvent[]
+
+  stockLots StockLot[]
+
+  inventoryCounts InventoryCount[]
+
+  notifications Notification[]
+
+  auditLogs AuditLog[]
+
+  memberPermissions MemberPermission[]
+
+  costCenters CostCenter[]
+}
+
+model TenantMember {
+  id        String     @id @default(uuid())
+  tenantId  String
+  userId    String
+  role      MemberRole @default(OWNER)
+  createdAt DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+}
+
+model TenantProfile {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique
+  businessType  String
+  regime        String
+  usesStock     Boolean
+  avgTicket     Decimal? @db.Decimal(12, 2)
+  monthlyVolume Decimal? @db.Decimal(14, 2)
+  wantsFinance  Boolean
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model TenantSettings {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  locale          String   @default("pt-BR")
+  currency        String   @default("BRL")
+  lowStockDefault Decimal? @db.Decimal(14, 3)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model Unit {
+  id            String       @id @default(uuid())
+  code          String       @unique
+  name          String
+  createdAt     DateTime     @default(now())
+  products      Product[]
+  baseType      UnitBaseType @default(COUNT)
+  // multiplier to base unit (e.g. g -> 0.001 kg if kg is base; choose consistent base by tenant)
+  multiplier    Decimal      @default(1.0)
+  allowFraction Boolean      @default(true)
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  tenantId          String
+  name              String
+  sku               String?
+  unitId            String
+  productCategoryId String?
+  lowStock          Decimal? @db.Decimal(14, 3)
+  lowStockThreshold Decimal? @db.Decimal(14, 3)
+  sellPrice         Decimal? @db.Decimal(14, 4)
+  costAvg           Decimal? @db.Decimal(14, 4)
+  isActive          Boolean  @default(true)
+  archivedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant            Tenant           @relation(fields: [tenantId], references: [id])
+  unit              Unit             @relation(fields: [unitId], references: [id])
+  category          ProductCategory? @relation(fields: [productCategoryId], references: [id])
+  moves             StockMove[]
+
+  stockLots StockLot[]
+
+  inventoryLines InventoryCountLine[]
+
+  notifications Notification[]
+
+  @@index([tenantId, productCategoryId])
+  @@index([tenantId, isActive])
+}
+
+model StockMove {
+  id         String      @id @default(uuid())
+  tenantId   String
+  productId  String
+  type       MoveType
+  reason     MoveReason?
+  quantity   Decimal     @db.Decimal(14, 3)
+  unitCost   Decimal?    @db.Decimal(14, 4)
+  cogsUnit   Decimal?    @db.Decimal(14, 4)
+  cogsTotal  Decimal?    @db.Decimal(14, 4)
+  occurredAt DateTime    @default(now())
+  createdAt  DateTime    @default(now())
+
+  unitPrice Decimal? @db.Decimal(14, 4)
+  note      String?
+
+  txIncomeId String? @unique
+
+  txIncome Transaction? @relation("MoveIncome", fields: [txIncomeId], references: [id])
+
+  createdByUserId String?
+  createdBy       User?   @relation("UserStockMoves", fields: [createdByUserId], references: [id])
+
+  allocations StockLotAllocation[]
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, productId, occurredAt])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  type      TxType
+  createdAt DateTime @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  tenantId    String
+  type        TxType
+  amount      Decimal  @db.Decimal(14, 2)
+  description String?
+  categoryId  String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  category     Category?   @relation(fields: [categoryId], references: [id])
+  costCenterId String?
+  costCenter   CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  // optional link to stock move income
+  moveIncome StockMove? @relation("MoveIncome")
+
+  @@index([tenantId, occurredAt])
+}
+
+model TenantInvite {
+  id         String       @id @default(uuid())
+  tenantId   String
+  email      String
+  role       MemberRole   @default(STAFF)
+  token      String       @unique
+  status     InviteStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  acceptedAt DateTime?
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id])
+  invitedByUserId String
+  invitedBy       User   @relation(fields: [invitedByUserId], references: [id])
+
+  @@index([tenantId, email])
+}
+
+model StockLot {
+  id         String    @id @default(uuid())
+  tenantId   String
+  productId  String
+  receivedAt DateTime  @default(now())
+  expiresAt  DateTime?
+  batchCode  String?
+
+  unitCost   Decimal
+  qtyInitial Decimal
+  qtyRemain  Decimal
+
+  product Product @relation(fields: [productId], references: [id])
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+
+  allocations StockLotAllocation[]
+
+  @@index([tenantId, productId, receivedAt])
+}
+
+model StockLotAllocation {
+  id       String  @id @default(uuid())
+  moveId   String
+  lotId    String
+  quantity Decimal
+  unitCost Decimal
+
+  move StockMove @relation(fields: [moveId], references: [id])
+  lot  StockLot  @relation(fields: [lotId], references: [id])
+
+  @@index([moveId])
+  @@index([lotId])
+}
+
+model InventoryCount {
+  id        String    @id @default(uuid())
+  tenantId  String
+  status    String    @default("OPEN") // OPEN/CLOSED
+  startedAt DateTime  @default(now())
+  closedAt  DateTime?
+
+  tenant Tenant               @relation(fields: [tenantId], references: [id])
+  lines  InventoryCountLine[]
+}
+
+model InventoryCountLine {
+  id         String  @id @default(uuid())
+  countId    String
+  productId  String
+  countedQty Decimal
+
+  count   InventoryCount @relation(fields: [countId], references: [id])
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@unique([countId, productId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  tenantId  String
+  type      NotificationType
+  productId String?
+  message   String
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, createdAt])
+}
+
+model MemberPermission {
+  id       String        @id @default(uuid())
+  tenantId String
+  userId   String
+  key      PermissionKey
+  allowed  Boolean       @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId, key])
+}
+
+model CostCenter {
+  id       String  @id @default(uuid())
+  tenantId String
+  name     String
+  code     String?
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+
+  @@unique([tenantId, name])
+}
+
+model RefreshToken {
+  id                  String    @id @default(uuid())
+  userId              String
+  tokenHash           String    @unique
+  createdAt           DateTime  @default(now())
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  replacedByTokenHash String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ProductCategory {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  products Product[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+
+model BillingSubscription {
+  id                   String          @id @default(uuid())
+  tenantId             String
+  provider             BillingProvider
+  providerCustomerId   String?
+  providerSubscriptionId String?
+  providerCheckoutId   String?
+  providerPlanCode     Plan
+  interval             BillingInterval @default(MONTH)
+  status               BillingStatus   @default(PENDING)
+  amount               Decimal         @db.Decimal(12, 2)
+  currency             String          @default("BRL")
+  checkoutUrl          String?
+  checkoutExpiresAt    DateTime?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  approvedAt           DateTime?
+  canceledAt           DateTime?
+  metadata             Json?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  payments BillingPayment[]
+
+  @@index([tenantId, createdAt])
+  @@index([provider, providerSubscriptionId])
+}
+
+model BillingPayment {
+  id                String        @id @default(uuid())
+  tenantId          String
+  subscriptionId    String?
+  provider          BillingProvider
+  providerPaymentId String        @unique
+  providerOrderId   String?
+  status            PaymentStatus @default(PENDING)
+  amount            Decimal       @db.Decimal(12, 2)
+  currency          String        @default("BRL")
+  paymentMethod     String?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  expiresAt         DateTime?
+  rawPayload        Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  subscription BillingSubscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([subscriptionId])
+}
+
+model BillingWebhookEvent {
+  id             String          @id @default(uuid())
+  tenantId       String?
+  provider       BillingProvider
+  eventType      String
+  providerEventId String?
+  resourceId     String?
+  processed      Boolean         @default(false)
+  payload        Json?
+  error          String?
+  createdAt      DateTime        @default(now())
+  processedAt    DateTime?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@unique([provider, eventType, providerEventId])
+  @@index([tenantId, createdAt])
+}

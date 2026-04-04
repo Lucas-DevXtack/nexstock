@@ -1,0 +1,17 @@
+{
+  "name": "nexstock-saas",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm -w apps/api run dev",
+    "dev:web": "npm -w apps/web run dev",
+    "build:api": "npm -w apps/api run build",
+    "build:web": "npm -w apps/web run build",
+    "build": "npm run build:api && npm run build:web",
+    "prisma:generate": "npm -w apps/api run prisma:generate",
+    "prisma:migrate:deploy": "npm -w apps/api run prisma:migrate:deploy"
+  }
+}

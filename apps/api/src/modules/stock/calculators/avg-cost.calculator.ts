@@ -1,0 +1,1 @@
+export function computeNewAvgCost(currentQty:number,currentAvg:number,inQty:number,inUnitCost:number){const total=currentQty*currentAvg+inQty*inUnitCost; const newQty=currentQty+inQty; if(newQty<=0) return currentAvg; return total/newQty;}

@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: nexstock_db
+    environment:
+      POSTGRES_USER: nexstock
+      POSTGRES_PASSWORD: nexstock
+      POSTGRES_DB: nexstock
+    ports:
+      - "5433:5432"
+    volumes:
+      - nexstock_pgdata:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: nexstock_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  nexstock_pgdata:
