@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import { requireAuth } from '../auth/guards/auth.guard.js';
+import { requireTenant } from '../../shared/middleware/tenant.middleware.js';
+import { requireTenantAccess } from '../../shared/middleware/tenant-access.middleware.js';
+import { getMyTenants, getTenantMe, getTenantPermissions, patchTenantArchive, patchTenantClose, patchTenantName, patchTenantReactivate, postTenant } from './tenants.controller.js';
+export const tenantsRoutes = Router();
+tenantsRoutes.get('/', requireAuth, getMyTenants);
+tenantsRoutes.post('/', requireAuth, postTenant);
+tenantsRoutes.get('/me', requireAuth, requireTenant, requireTenantAccess, getTenantMe);
+tenantsRoutes.get('/:id/policy', requireAuth, getTenantPermissions);
+tenantsRoutes.patch('/:id/name', requireAuth, patchTenantName);
+tenantsRoutes.patch('/:id/archive', requireAuth, patchTenantArchive);
+tenantsRoutes.patch('/:id/reactivate', requireAuth, patchTenantReactivate);
+tenantsRoutes.patch('/:id/close', requireAuth, patchTenantClose);

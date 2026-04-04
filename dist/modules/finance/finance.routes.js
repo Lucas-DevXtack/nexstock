@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { requireAuth } from '../auth/guards/auth.guard.js';
+import { requireTenant } from '../../shared/middleware/tenant.middleware.js';
+import { loadTenantBilling } from '../billing/billing.middleware.js';
+import { requirePlan } from '../billing/guards/plan.guard.js';
+import { requireFeature } from '../billing/guards/feature.guard.js';
+import { getTransactions, postTransactions } from './finance.controller.js';
+export const financeRoutes = Router();
+financeRoutes.get('/transactions', requireAuth, requireTenant, loadTenantBilling, requirePlan('PRO'), requireFeature('finance_enabled'), getTransactions);
+financeRoutes.post('/transactions', requireAuth, requireTenant, loadTenantBilling, requirePlan('PRO'), requireFeature('finance_enabled'), postTransactions);
