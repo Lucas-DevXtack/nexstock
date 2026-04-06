@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
+import AppLayout from '../components/layout/AppLayout';
 import AppShell from '../components/layout/AppShell';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 
@@ -26,43 +27,61 @@ import Health from '../pages/pro/Health';
 import ImportProducts from '../pages/importexport/ImportProducts';
 import Profile from '../pages/profile/Profile';
 import Audit from '../pages/audit/Audit';
+
 import MarketingHome from '../pages/public/MarketingHome';
+import PrivacyPolicy from '../pages/public/PrivacyPolicy';
+import TermsOfUse from '../pages/public/TermsOfUse';
+import QrConsentGate from '../pages/public/QrConsentGate';
 
 export const router = createBrowserRouter([
-  { path: '/', element: <MarketingHome /> },
-  { path: '/login', element: <Login /> },
-  { path: '/signup', element: <Signup /> },
-  { path: '/forgot-password', element: <ForgotPassword /> },
-  { path: '/reset-password', element: <ResetPassword /> },
-
-  { path: '/tenant/select', element: <SelectTenant /> },
-  { path: '/tenant/create', element: <CreateTenant /> },
-  { path: '/onboarding', element: <Onboarding /> },
-  { path: '/onboarding/import', element: <ImportWizard /> },
-  { path: '/invite/accept', element: <AcceptInvite /> },
-
   {
-    path: '/app',
-    element: <ProtectedRoute />,
+    element: <AppLayout />, // 👈 ROOT GLOBAL (resolve seu problema)
     children: [
+      // 🌐 PÚBLICO
+      { path: '/', element: <MarketingHome /> },
+      { path: '/privacy', element: <PrivacyPolicy /> },
+      { path: '/terms', element: <TermsOfUse /> },
+      { path: '/qr', element: <QrConsentGate /> },
+      { path: '/qr/:slug', element: <QrConsentGate /> },
+
+      // 🔐 AUTH
+      { path: '/login', element: <Login /> },
+      { path: '/signup', element: <Signup /> },
+      { path: '/forgot-password', element: <ForgotPassword /> },
+      { path: '/reset-password', element: <ResetPassword /> },
+
+      // 🏢 TENANT / ONBOARDING
+      { path: '/tenant/select', element: <SelectTenant /> },
+      { path: '/tenant/create', element: <CreateTenant /> },
+      { path: '/onboarding', element: <Onboarding /> },
+      { path: '/onboarding/import', element: <ImportWizard /> },
+      { path: '/invite/accept', element: <AcceptInvite /> },
+
+      // 🚀 APP PROTEGIDO
       {
-        element: <AppShell />,
+        path: '/app',
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <Navigate to="home" replace /> },
-          { path: 'home', element: <Home /> },
-          { path: 'dashboard', element: <Dashboard /> },
-          { path: 'stock/products', element: <Products /> },
-          { path: 'stock/move', element: <NewMove /> },
-          { path: 'stock/balance', element: <Balance /> },
-          { path: 'finance/transactions', element: <Transactions /> },
-          { path: 'team', element: <Team /> },
-          { path: 'billing', element: <Billing /> },
-          { path: 'reports', element: <Reports /> },
-          { path: 'metrics', element: <Metrics /> },
-          { path: 'pro/health', element: <Health /> },
-          { path: 'import/products', element: <ImportProducts /> },
-          { path: 'profile', element: <Profile /> },
-          { path: 'audit', element: <Audit /> },
+          {
+            element: <AppShell />,
+            children: [
+              { index: true, element: <Navigate to="home" replace /> },
+              { path: 'home', element: <Home /> },
+              { path: 'dashboard', element: <Dashboard /> },
+              { path: 'stock/products', element: <Products /> },
+              { path: 'stock/move', element: <NewMove /> },
+              { path: 'stock/balance', element: <Balance /> },
+              { path: 'finance/transactions', element: <Transactions /> },
+              { path: 'team', element: <Team /> },
+              { path: 'billing', element: <Billing /> },
+              { path: 'reports', element: <Reports /> },
+              { path: 'metrics', element: <Metrics /> },
+              { path: 'pro/health', element: <Health /> },
+              { path: 'import/products', element: <ImportProducts /> },
+              { path: 'profile', element: <Profile /> },
+              { path: 'audit', element: <Audit /> },
+            ],
+          },
         ],
       },
     ],

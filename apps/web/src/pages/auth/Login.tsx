@@ -20,7 +20,13 @@ function AuthShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_30px_70px_-40px_rgba(15,23,42,0.3)]">{children}</div>
-          <div className="mt-8 text-center text-sm text-slate-400">© 2024 NexStock</div>
+          <div className="mt-8 space-y-3 text-center">
+            <div className="text-sm text-slate-400">© 2026 NexStock</div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
+              <Link className="transition hover:text-slate-900" to="/terms">Termos de Uso</Link>
+              <Link className="transition hover:text-slate-900" to="/privacy">Política de Privacidade</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

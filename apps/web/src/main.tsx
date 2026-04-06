@@ -6,8 +6,8 @@ import { ToastProvider } from './app/providers/ToastProvider';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ToastProvider>
-      <App/>
-    </ToastProvider>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
   </React.StrictMode>
 );

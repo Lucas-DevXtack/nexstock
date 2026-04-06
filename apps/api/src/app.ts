@@ -21,6 +21,7 @@ import { productsCsvRoutes } from './modules/importexport/productsCsv.routes.js'
 import { productsXlsxRoutes } from './modules/importexport/productsXlsx.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { auditRoutes } from './modules/audit/audit.routes.js';
+import { qrRoutes } from './modules/qr/qr.routes.js';
 import { requireAuth } from './modules/auth/guards/auth.guard.js';
 import { requireTenant } from './shared/middleware/tenant.middleware.js';
 import { requireActiveTenant } from './shared/middleware/tenant-status.middleware.js';
@@ -49,6 +50,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.get('/health', (_req, res) => res.json({ ok: true, env: env.NODE_ENV }));
+app.use('/qr', qrRoutes);
 
 app.use('/auth', authRoutes);
 app.use('/tenants', tenantsRoutes);

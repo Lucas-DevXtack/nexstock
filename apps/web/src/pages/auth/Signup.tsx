@@ -51,6 +51,11 @@ export default function Signup() {
             <Button type="submit" className="w-full">Criar</Button>
           </form>
 
+
+          <div className="mt-4 text-xs leading-6 text-gray-500">
+            Ao criar sua conta, você concorda com os <Link className="font-semibold text-gray-900 underline" to="/terms">Termos de Uso</Link> e com a <Link className="font-semibold text-gray-900 underline" to="/privacy">Política de Privacidade</Link>.
+          </div>
+
           <div className="mt-4 text-sm text-gray-600">
             Já tem conta? <Link className="font-semibold text-gray-900 underline" to="/login">Entrar</Link>
           </div>

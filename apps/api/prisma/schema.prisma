@@ -564,3 +564,24 @@ model BillingWebhookEvent {
   @@unique([provider, eventType, providerEventId])
   @@index([tenantId, createdAt])
 }
+
+
+model QrScan {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  slug       String
+  targetUrl  String
+  source     String?
+  medium     String?
+  campaign   String?
+  referrer   String?
+  ipHash     String?
+  userAgent  String?
+  deviceType String?
+  os         String?
+  browser    String?
+  consent    Boolean  @default(false)
+
+  @@index([createdAt])
+  @@index([slug])
+}

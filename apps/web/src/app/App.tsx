@@ -9,7 +9,9 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <TenantProvider>
-          <RouterProvider router={router} />
+          <>
+            <RouterProvider router={router} />
+          </>
         </TenantProvider>
       </AuthProvider>
     </ThemeProvider>

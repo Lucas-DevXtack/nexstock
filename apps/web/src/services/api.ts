@@ -1,3 +1,4 @@
+import { hasAnalyticsConsent } from '../utils/consent';
 import { storage } from '../utils/storage';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3333').replace(/\/$/, '');
@@ -9,6 +10,7 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
     'Content-Type': 'application/json',
     ...(storage.token ? { Authorization: `Bearer ${storage.token}` } : {}),
     ...(storage.tenantId ? { 'X-Tenant-Id': storage.tenantId } : {}),
+    'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
     ...(extra || {}),
   };
 }
@@ -18,7 +20,7 @@ async function tryRefreshToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false' },
       body: JSON.stringify({ refreshToken: storage.refreshToken }),
     })
       .then(async (res) => {
@@ -68,6 +70,8 @@ export async function apiDownload(path: string, opts: RequestInit = {}, retry = 
     headers: {
       ...(storage.token ? { Authorization: `Bearer ${storage.token}` } : {}),
       ...(storage.tenantId ? { 'X-Tenant-Id': storage.tenantId } : {}),
+      'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
+    'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
       ...(opts.headers || {}),
     },
   });

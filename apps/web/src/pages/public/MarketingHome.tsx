@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import PublicHeader from '../../components/public/PublicHeader';
+import LegalFooter from '../../components/public/LegalFooter';
 
 const plans = [
   {
@@ -365,6 +366,8 @@ export default function MarketingHome() {
           </div>
         </section>
       </main>
+
+      <LegalFooter />
     </div>
   );
 }

@@ -18,6 +18,8 @@ export default function PublicHeader() {
           <a href="#beneficios" className="transition hover:text-slate-900 dark:hover:text-slate-900">Benefícios</a>
           <a href="#recursos" className="transition hover:text-slate-900 dark:hover:text-slate-900">Recursos</a>
           <a href="#planos" className="transition hover:text-slate-900 dark:hover:text-slate-900">Planos</a>
+          <Link to="/privacy" className="transition hover:text-slate-900 dark:hover:text-slate-900">Privacidade</Link>
+          <Link to="/terms" className="transition hover:text-slate-900 dark:hover:text-slate-900">Termos</Link>
         </nav>
 
         <div className="flex items-center gap-2">

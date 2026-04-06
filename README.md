@@ -51,3 +51,12 @@ Veja `README_DEPLOY.md`.
 
 ## Observação
 O projeto ficou mais pronto para produção, mas billing, convites e fluxos críticos ainda precisam de validação manual em ambiente público antes de abrir para clientes.
+
+
+## Consentimento LGPD implementado
+- banner global com aceitar/recusar analytics
+- rota web `/qr` e `/qr/:slug` com tela de consentimento antes do tracking
+- header `X-Consent-Analytics` enviado nas chamadas do frontend
+- tracking de QR só grava no banco quando houver consentimento
+- fallback sem analytics continua abrindo o site normalmente
+
