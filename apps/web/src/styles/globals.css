@@ -88,7 +88,6 @@ html.dark *::-webkit-scrollbar-thumb {
 }
 
 /* classes de texto no dark mode em CSS puro para evitar circular dependency */
-html.dark .text-slate-900,
 html.dark .text-slate-950,
 html.dark .text-gray-900 {
   color: rgb(241 245 249);
