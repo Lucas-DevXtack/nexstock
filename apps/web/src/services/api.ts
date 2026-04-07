@@ -2,6 +2,7 @@ import { hasAnalyticsConsent } from '../utils/consent';
 import { storage } from '../utils/storage';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3333').replace(/\/$/, '');
+const REQUEST_TIMEOUT_MS = 15000;
 
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -15,34 +16,65 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
   };
 }
 
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = REQUEST_TIMEOUT_MS
+) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      throw new Error('A requisição demorou demais para responder.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function tryRefreshToken(): Promise<string | null> {
   if (!storage.refreshToken) return null;
+
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+    refreshPromise = fetchWithTimeout(`${API_URL}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
+      },
       body: JSON.stringify({ refreshToken: storage.refreshToken }),
     })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         const nextAccessToken = body?.accessToken || body?.token;
+
         if (!res.ok || !nextAccessToken) {
           storage.clearAuth();
           return null;
         }
+
         storage.token = nextAccessToken;
         if (body.refreshToken) storage.refreshToken = body.refreshToken;
+
         return nextAccessToken as string;
       })
       .finally(() => {
         refreshPromise = null;
       });
   }
+
   return refreshPromise;
 }
 
 export async function api(path: string, opts: RequestInit = {}, retry = true) {
-  const res = await fetch(API_URL + path, {
+  const res = await fetchWithTimeout(API_URL + path, {
     ...opts,
     headers: authHeaders(opts.headers),
   });
@@ -55,23 +87,24 @@ export async function api(path: string, opts: RequestInit = {}, retry = true) {
   }
 
   const body = await res.json().catch(() => ({}));
+
   if (!res.ok) {
     const err: any = new Error(body?.message || body?.error || 'Request failed');
     err.status = res.status;
     err.body = body;
     throw err;
   }
+
   return body?.data ?? body;
 }
 
 export async function apiDownload(path: string, opts: RequestInit = {}, retry = true) {
-  const res = await fetch(API_URL + path, {
+  const res = await fetchWithTimeout(API_URL + path, {
     ...opts,
     headers: {
       ...(storage.token ? { Authorization: `Bearer ${storage.token}` } : {}),
       ...(storage.tenantId ? { 'X-Tenant-Id': storage.tenantId } : {}),
       'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
-    'X-Consent-Analytics': hasAnalyticsConsent() ? 'true' : 'false',
       ...(opts.headers || {}),
     },
   });
